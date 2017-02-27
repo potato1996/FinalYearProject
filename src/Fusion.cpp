@@ -16,7 +16,7 @@
 
 #include <stdio.h>
 
-#include <utils/Log.h>
+//#include <utils/Log.h>
 
 #include "Fusion.h"
 
@@ -317,14 +317,14 @@ void Fusion::handleGyro(const vec3_t& w, float dT) {
     predict(w, dT);
 }
 
-status_t Fusion::handleAcc(const vec3_t& a, float dT) {
+bool Fusion::handleAcc(const vec3_t& a, float dT) {
     if (!checkInitComplete(ACC, a, dT))
-        return BAD_VALUE;
+        return false;
 
     // ignore acceleration data if we're close to free-fall
     const float l = length(a);
     if (l < FREE_FALL_THRESHOLD) {
-        return BAD_VALUE;
+        return false;
     }
 
     const float l_inv = 1.0f/l;
@@ -347,22 +347,22 @@ status_t Fusion::handleAcc(const vec3_t& a, float dT) {
     const float p = l_inv * mParam.accStdev*expf(d);
 
     update(unityA, Ba, p);
-    return NO_ERROR;
+    return true;
 }
 
-status_t Fusion::handleMag(const vec3_t& m) {
+bool Fusion::handleMag(const vec3_t& m) {
     if (!checkInitComplete(MAG, m))
-        return BAD_VALUE;
+        return false;
 
     // the geomagnetic-field should be between 30uT and 60uT
     // reject if too large to avoid spurious magnetic sources
     const float magFieldSq = length_squared(m);
     if (magFieldSq > MAX_VALID_MAGNETIC_FIELD_SQ) {
-        return BAD_VALUE;
+        return false;
     } else if (magFieldSq < MIN_VALID_MAGNETIC_FIELD_SQ) {
         // Also reject if too small since we will get ill-defined (zero mag)
         // cross-products below
-        return BAD_VALUE;
+        return false;
     }
 
     // Orthogonalize the magnetic field to the gravity field, mapping it into
@@ -375,7 +375,7 @@ status_t Fusion::handleMag(const vec3_t& m) {
     // Reject this case as well to avoid div by zero problems and
     // ill-conditioning below.
     if (length_squared(east) < MIN_VALID_CROSS_PRODUCT_MAG_SQ) {
-        return BAD_VALUE;
+        return false;
     }
 
     // If we have created an orthogonal magnetic field successfully,
@@ -386,7 +386,7 @@ status_t Fusion::handleMag(const vec3_t& m) {
     north *= l_inv;
 
     update(north, Bm,  mParam.magStdev*l_inv);
-    return NO_ERROR;
+    return true;
 }
 
 void Fusion::checkState() {
@@ -396,7 +396,7 @@ void Fusion::checkState() {
 
     if (!isPositiveSemidefinite(P[0][0], SYMMETRY_TOLERANCE) ||
         !isPositiveSemidefinite(P[1][1], SYMMETRY_TOLERANCE)) {
-        ALOGW("Sensor fusion diverged; resetting state.");
+        printf("Sensor fusion diverged; resetting state.");
         P = 0;
     }
 }

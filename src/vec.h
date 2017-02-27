@@ -26,7 +26,7 @@
 
 // -----------------------------------------------------------------------
 
-#define PURE __attribute__((pure))
+#define PURE //__attribute__((pure))
 
 namespace android {
 
@@ -114,7 +114,7 @@ VEC<TYPE, SIZE> PURE doScalarMul(
     for (size_t i=0 ; i<SIZE ; i++)
         r[i] = lhs * rhs[i];
     return r;
-}
+};
 
 }; // namespace helpers
 
@@ -418,7 +418,7 @@ vec<TYPE, SIZE>& vec<TYPE, SIZE>::operator -= (const vec<TYPE, SIZE>& rhs) {
 }
 
 template <typename TYPE, size_t SIZE>
-vec<TYPE, SIZE>& vec<TYPE, SIZE>::operator *= (vec<TYPE, SIZE>::pTYPE rhs) {
+vec<TYPE, SIZE>& vec<TYPE, SIZE>::operator *= (typename vec<TYPE, SIZE>::pTYPE rhs) {
     vec<TYPE, SIZE>& lhs(*this);
     for (size_t i=0 ; i<SIZE ; i++)
         lhs[i] *= rhs;

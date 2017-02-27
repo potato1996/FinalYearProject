@@ -391,3 +391,7 @@ typedef mat<float, 4, 4> mat44_t;
 }; // namespace android
 
 #endif /* ANDROID_MAT_H */
+
+namespace mathStructures{
+
+}
