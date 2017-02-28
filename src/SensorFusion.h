@@ -1,4 +1,6 @@
+#pragma once
 #include "Fusion.h"
+#include "SensorData.h"
 #include <stdint.h>
 namespace android{
 

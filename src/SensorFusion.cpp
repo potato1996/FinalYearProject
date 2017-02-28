@@ -30,5 +30,9 @@ namespace android{
 }
 
 int main(){
+
+	android::SensorData dataloader;
+	dataloader.LoadLogFile("D:/cs/FinalYearProject/data/ANDROID1.log");
+	system("pause");
 	return 0;
 }
