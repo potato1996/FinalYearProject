@@ -13,7 +13,6 @@ namespace android {
 		}
 
 		char* lineBuffer = new char[1024];
-		float uselessBuffer;
 		while (!pLogFile.eof()) {
 			DataTransaction currTransaction;
 			pLogFile.getline(lineBuffer, 1000);
@@ -28,8 +27,7 @@ namespace android {
 		}
 		totalTransactions = dataTransactions.size();
 		pLogFile.close();
-		
-
+		return true;
 	}
 	vec3_t SensorData::getAccData(int n){
 		return dataTransactions[n].AccData;

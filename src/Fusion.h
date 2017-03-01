@@ -5,8 +5,6 @@ Modified Based On http://androidxref.com/7.0.0_r1/xref/frameworks/native/service
 #ifndef ANDROID_FUSION_H
 #define ANDROID_FUSION_H
 
-//#include <utils/Errors.h>
-
 #include "quat.h"
 #include "mat.h"
 #include "vec.h"

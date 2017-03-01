@@ -1,22 +1,8 @@
 /*
- * Copyright (C) 2011 The Android Open Source Project
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+Modified Based On http://androidxref.com/7.0.0_r1/xref/frameworks/native/services/sensorservice/
+*/
 
 #include <stdio.h>
-
-//#include <utils/Log.h>
 
 #include "Fusion.h"
 
@@ -70,7 +56,7 @@ static const float SYMMETRY_TOLERANCE = 1e-10f;
  * ill-conditioning and div by zeros.
  * Threshhold: 10% of g, in m/s^2
  */
-static const float NOMINAL_GRAVITY = 9.81f;
+static const float NOMINAL_GRAVITY = 9.98f;
 static const float FREE_FALL_THRESHOLD = 0.1f * (NOMINAL_GRAVITY);
 
 /*
@@ -297,7 +283,7 @@ bool Fusion::checkInitComplete(int what, const vec3_t& d, float dT) {
         mat33_t R;
         vec3_t  up(mData[0]);
         vec3_t  east;
-
+		
         if (mMode != FUSION_NOMAG) {
             east = normalize(cross_product(mData[1], up));
         } else {
