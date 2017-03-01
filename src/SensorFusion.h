@@ -21,13 +21,22 @@ namespace android{
 		//vec4_t &mAttitude;
 		long long mGryoTime;
 		long long mAccTime;
+		class SensorData* sensorData;
+		vec3_t GryoDrift;
+		int currTransactionNum;
+
 
 	public:
-		SensorFusion() :mGryoTime(0), mAccTime(0)
+		SensorFusion() :mGryoTime(0), mAccTime(0), sensorData(NULL)
 		{
-			mFusion.init(3);
+			mFusion.init(0);
 		}
+		void initStatus(SensorData* sensorData);
+		bool updateOneCycle();
 		void update(Measurement measurement);
+		void dumpToEulerAngle(float& Pinch, float& Roll, float& Yaw);
+		long long getCurrTimeStamp();
+
 	};
 
 }

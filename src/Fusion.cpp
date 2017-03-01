@@ -187,6 +187,9 @@ Fusion::Fusion() {
     x0 = 0;
     x1 = 0;
 
+	initFlag = false;
+	initFinishFlag = false;
+
     init();
 }
 
@@ -250,6 +253,7 @@ void Fusion::initFusion(const vec4_t& q, float dT)
     // initial covariance: Var{ x(t0) }
     // TODO: initialize P correctly
     P = 0;
+	initFinishFlag = true;
 }
 
 bool Fusion::hasEstimate() const {
@@ -259,7 +263,7 @@ bool Fusion::hasEstimate() const {
 }
 
 bool Fusion::checkInitComplete(int what, const vec3_t& d, float dT) {
-    if (hasEstimate())
+    if (hasEstimate() && initFinishFlag )
         return true;
 
     if (what == ACC) {
@@ -280,7 +284,7 @@ bool Fusion::checkInitComplete(int what, const vec3_t& d, float dT) {
         mInitState |= GYRO;
     }
 
-    if (hasEstimate()) {
+	if (hasEstimate() && initFlag) {
         // Average all the values we collected so far
         mData[0] *= 1.0f/mCount[0];
         if (mMode != FUSION_NOMAG) {
