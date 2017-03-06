@@ -82,19 +82,18 @@ namespace android{
 		currMeasurement.measure_val = sensorData->getGyroData(currTransactionNum);
 		currMeasurement.timestamp = sensorData->getTimeStamp(currTransactionNum);
 		update(currMeasurement);
-
+		
 		//update MAG
 		currMeasurement.measure_type = MAG;
 		currMeasurement.measure_val = sensorData->getMagData(currTransactionNum);
 		currMeasurement.timestamp = sensorData->getTimeStamp(currTransactionNum);
 		update(currMeasurement);
-
+		
 		//update ACC
 		currMeasurement.measure_type = ACC;
 		currMeasurement.measure_val = sensorData->getAccData(currTransactionNum);
 		currMeasurement.timestamp = sensorData->getTimeStamp(currTransactionNum);
 		update(currMeasurement);
-
 		
 
 		currTransactionNum++;
@@ -107,11 +106,13 @@ namespace android{
 		Q[1] = q.x;
 		Q[2] = q.y;
 		Q[3] = q.z;
-		//Roll = atan2(2.f * (Q[2]*Q[3] + Q[0]*Q[1]), Q[0]*Q[0] - Q[1]*Q[1] - Q[2]*Q[2] + Q[3]*Q[3])*57.3;
-		Roll = atan2(2.f * (Q[2] * Q[3] + Q[0] * Q[1]), 1-2.0f*(Q[1]*Q[1]+Q[2]*Q[2]))*57.3;
+		Roll = atan2(2.f * (Q[2]*Q[3] + Q[0]*Q[1]), Q[0]*Q[0] - Q[1]*Q[1] - Q[2]*Q[2] + Q[3]*Q[3])*57.3;
+		//Roll = atan2(2.f * (Q[2] * Q[3] + Q[0] * Q[1]), 1-2.0f*(Q[1]*Q[1]+Q[2]*Q[2]))*57.3;
 		Pitch = asin(2.f * (Q[0]*Q[2] - Q[1]*Q[3]))* 57.3;
-		//Yaw = atan2(2.f * (Q[1]*Q[2] + Q[0]*Q[3]), Q[0]*Q[0] + Q[1]*Q[1] - Q[2]*Q[2] - Q[3]*Q[3])*57.3;
-		Yaw = atan2(2.f * (Q[1] * Q[2] - Q[0] * Q[3]), 2.0f*(Q[0]*Q[0] -Q[1]*Q[1])-1)*57.3;
+		Yaw = atan2(2.f * (Q[1]*Q[2] + Q[0]*Q[3]), Q[0]*Q[0] + Q[1]*Q[1] - Q[2]*Q[2] - Q[3]*Q[3])*57.3;
+		//Yaw = atan2(2.f * (Q[1] * Q[2] - Q[0] * Q[3]), 2.0f*(Q[0]*Q[0] -Q[1]*Q[1])-1)*57.3;
+		//Yaw += 90;
+		if (Yaw > 180) Yaw -= 360;
 		
 	}
 	long long SensorFusion::getCurrTimeStamp(){
@@ -127,17 +128,22 @@ namespace android{
 int main(){
 
 	android::SensorData dataloader;
-	dataloader.LoadLogFile("D:/cs/FinalYearProject/data/ANDROID1.log");
-	std::ofstream pOutputFile("D:/cs/FinalYearProject/data/ANDROID1_answer.log");
+	dataloader.LoadLogFile("D:/cs/FinalYearProject/data/p9_4.log");
+	std::ofstream pOutputFile("D:/cs/FinalYearProject/data/p9_4_all_answer.log");
 	android::SensorFusion sensorFusion;
 	sensorFusion.initStatus(&dataloader);
+	long long init_timeStamp = sensorFusion.getCurrTimeStamp();
+	long long last_timeStamp = -1;
 	while (sensorFusion.updateOneCycle()){
 		float Pitch, Roll, Yaw;
 		long long timeStamp;
 		sensorFusion.dumpToEulerAngle(Pitch, Roll, Yaw);
-		timeStamp = sensorFusion.getCurrTimeStamp();
+		timeStamp = sensorFusion.getCurrTimeStamp() - init_timeStamp;
+		if (timeStamp == last_timeStamp) continue;
+		last_timeStamp = timeStamp;
 		//printf("%I64d, Pitch=%f, Roll=%f, Yaw =%f\n", timeStamp, Pitch, Roll, Yaw);
-		pOutputFile << " Time = " << timeStamp << " Pitch = " << Pitch << " Roll = " << Roll << " Yaw = " << Yaw <<std::endl;
+		//pOutputFile << " Time = " << timeStamp << " Pitch = " << Pitch << " Roll = " << Roll << " Yaw = " << Yaw <<std::endl;
+		pOutputFile << timeStamp << ',' << Roll << std::endl;
 	}
 	pOutputFile.close();
 	return 0;
