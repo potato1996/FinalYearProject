@@ -56,6 +56,7 @@ public:
     vec3_t getBias() const;
     mat33_t getRotationMatrix() const;
     bool hasEstimate() const;
+	void doInitFusion();
 	void setInitFlagTrue(){
 		initFlag = true;
 	}

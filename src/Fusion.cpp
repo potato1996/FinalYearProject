@@ -56,7 +56,7 @@ static const float SYMMETRY_TOLERANCE = 1e-10f;
  * ill-conditioning and div by zeros.
  * Threshhold: 10% of g, in m/s^2
  */
-static const float NOMINAL_GRAVITY = 9.98f;
+static const float NOMINAL_GRAVITY = 9.80f;
 static const float FREE_FALL_THRESHOLD = 0.1f * (NOMINAL_GRAVITY);
 
 /*
@@ -247,7 +247,36 @@ bool Fusion::hasEstimate() const {
            ((mInitState & GYRO) || (mMode == FUSION_NOGYRO)) &&
            (mInitState & ACC);
 }
+void Fusion::doInitFusion(){
 
+	if (hasEstimate()) {
+		// Average all the values we collected so far
+		mData[0] *= 1.0f / mCount[0];
+		if (mMode != FUSION_NOMAG) {
+			mData[1] *= 1.0f / mCount[1];
+		}
+		mData[2] *= 1.0f / mCount[2];
+
+		// calculate the MRPs from the data collection, this gives us
+		// a rough estimate of our initial state
+		mat33_t R;
+		vec3_t  up(mData[0]);
+		vec3_t  east;
+
+		if (mMode != FUSION_NOMAG) {
+			east = normalize(cross_product(mData[1], up));
+		}
+		else {
+			east = getOrthogonal(up);
+		}
+
+		vec3_t north(cross_product(up, east));
+		R << east << north << up;
+		const vec4_t q = matrixToQuat(R);
+
+		initFusion(q, mGyroRate);
+	}
+}
 bool Fusion::checkInitComplete(int what, const vec3_t& d, float dT) {
     if (hasEstimate() && initFinishFlag )
         return true;
@@ -269,7 +298,7 @@ bool Fusion::checkInitComplete(int what, const vec3_t& d, float dT) {
         mCount[2]++;
         mInitState |= GYRO;
     }
-
+	/*
 	if (hasEstimate() && initFlag) {
         // Average all the values we collected so far
         mData[0] *= 1.0f/mCount[0];
@@ -295,7 +324,7 @@ bool Fusion::checkInitComplete(int what, const vec3_t& d, float dT) {
         const vec4_t q = matrixToQuat(R);
 
         initFusion(q, mGyroRate);
-    }
+    }*/
 
     return false;
 }
