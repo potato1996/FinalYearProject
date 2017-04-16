@@ -1,6 +1,9 @@
 #include "SensorFusion.h"
 #include <math.h>
 #include<fstream>
+
+static const float DEFAULT_ACC_STDEV = 0.015f;
+static const float DUFAULT_VISION_STDEV = 0.045f;
 namespace android{
 
 
@@ -33,9 +36,26 @@ namespace android{
 		sensorData = data;
 		//Initialize using first K points
 		int K = 1000;
-		vec3_t setInitPosition = 0;
+
+		//InitElements
+		last_vision_timestamp = 0;
+		vec3_t setInitPosition;
+		setInitPosition[0] = 0;
+		setInitPosition[1] = 0;
+		setInitPosition[2] = 0;
 		Position = setInitPosition;
 		Speed = setInitPosition;
+		SpeedP[0][0] = 0;
+		SpeedP[0][1] = 0;
+		SpeedP[0][2] = 0;
+		SpeedP[1][0] = 0;
+		SpeedP[1][1] = 0;
+		SpeedP[1][2] = 0;
+		SpeedP[2][0] = 0;
+		SpeedP[2][1] = 0;
+		SpeedP[2][2] = 0;
+
+
 		vec3_t calGryoDrift = 0;
 		vec3_t calAccDrift = 0;
 		for (int i = 0; i < K; ++i){
@@ -80,26 +100,56 @@ namespace android{
 		mFusion.doInitFusion();
 		vec3_t grav = 0;
 		grav.z = 9.8f;
-		AccDrift = calAccDrift - invert(mFusion.getRotationMatrix())* grav;
+		AccDrift = calAccDrift - mFusion.getRotationMatrix()* grav;
 		//vec3_t testinvertback = mFusion.getRotationMatrix() * AccDrift;
 		currTransactionNum = K;
 		Attitude = mFusion.getAttitude();
 
 
 	}
-	void SensorFusion::updatePosition(){
+	void SensorFusion::updatePosition(vec3_t visiondata, long long curr_vision_timestamp){
+		double dt = curr_vision_timestamp - last_vision_timestamp;
+		fuseVision(visiondata*(1.0e6/dt), dt/1.0e6);
+		last_vision_timestamp = curr_vision_timestamp;
+	}
+	void SensorFusion::fuseVision(vec3_t z, float dT){
+		mat33_t I;
+		I[0][0] = 1;
+		I[0][1] = 0;
+		I[0][2] = 0;
+		I[1][0] = 0;
+		I[1][1] = 1;
+		I[1][2] = 0;
+		I[2][0] = 0;
+		I[2][1] = 0;
+		I[2][2] = 1;
+		
+		mat33_t A = I;
+		mat33_t B = I*dT;
+		mat33_t H = I;
+		mat33_t Ht = invert(H);
+		mat33_t Q = I*DEFAULT_ACC_STDEV;
+		mat33_t R = I*DUFAULT_VISION_STDEV;
+		
+		mat33_t P1 = SpeedP + Q;
+		mat33_t k = P1* Ht * invert(R + H*P1*Ht);
+		vec3_t x1 = A*Speed + k * (z - H*Speed);
+		SpeedP = (I - k*H)*P1;
+		Speed = x1;
+
+		Position = Position + Speed* dT;
+	}
+	void SensorFusion::accumulateSpeed(){
 		long long timestamp = sensorData->getTimeStamp(currTransactionNum);
 		if ((timestamp - mAccTime > 0) &&
 			(timestamp - mAccTime < (int64_t)(1e8))){
 			double dT = (timestamp - mAccTime) / 1000000000.0f;
 			mat33_t rotationMatrix = dumpToRotationMatrix();
 			vec3_t testAcc = sensorData->getAccData(currTransactionNum);
-			vec3_t accData = rotationMatrix * (sensorData->getAccData(currTransactionNum)- AccDrift);
+			vec3_t accData = invert(rotationMatrix) * (sensorData->getAccData(currTransactionNum)- AccDrift);
 			accData.z -= 9.8f;
-			//Position = Position + Speed * dT;
-			Speed = Speed + rotationMatrix * accData * dT;
-			//Position = Speed;
-			Position = accData;
+			Speed = Speed + accData * dT;
+			//Speed = accData;
 		}
 	}
 	void SensorFusion::updateAttitude(bool useGYRO, bool useMAG, bool useACC){
@@ -131,7 +181,7 @@ namespace android{
 		if (currTransactionNum >= sensorData->totalTransactions - 1)
 			return false;
 		updateAttitude(useGYRO, useMAG, useACC);
-		updatePosition();
+		accumulateSpeed();
 		mAccTime = sensorData->getTimeStamp(currTransactionNum);
 		mGryoTime = sensorData->getTimeStamp(currTransactionNum);
 		currTransactionNum++;
@@ -168,15 +218,30 @@ namespace android{
 
 int main(){
 
+	std::ifstream visionfile("D:/cs/FinalYearProject/data/vision_pocket.csv");
+
+	long long vision_basetime = 3600000;
+	long long curr_vision_time = 0;
+	double init_vision_number;
+	double curr_vision_number;
+	char tempch;
+	while (curr_vision_time < vision_basetime){
+		visionfile >> curr_vision_time >> tempch >> init_vision_number;
+		curr_vision_number = init_vision_number;
+	}
+
 	android::SensorData dataloader;
-	dataloader.LoadLogFile("D:/cs/FinalYearProject/data/move1.log");
-	std::ofstream pOutputFile("D:/cs/FinalYearProject/data/move1_acc.log");
+	dataloader.LoadLogFile("D:/cs/FinalYearProject/data/common_pocket.log");
+	std::ofstream pOutputFile("D:/cs/FinalYearProject/data/common_pocket_out.log");
 	android::SensorFusion sensorFusion;
 	sensorFusion.initStatus(&dataloader);
 	long long init_timeStamp = sensorFusion.getCurrTimeStamp();
 	long long last_timeStamp = -1;
 	long long timeStamp;
-	while (sensorFusion.updateOneCycle()){
+	sensorFusion.last_vision_timestamp = vision_basetime;
+
+	/*
+	while (sensorFusion.updateOneCycle(true,false,false)){
 		timeStamp = sensorFusion.getCurrTimeStamp() - init_timeStamp;
 		if (timeStamp == last_timeStamp) continue;
 		last_timeStamp = timeStamp;
@@ -188,9 +253,36 @@ int main(){
 		//pOutputFile << timeStamp << ',' << Roll << std::endl;
 
 		float x, y, z;
-		sensorFusion.getPosition(x,y,z);
+		//sensorFusion.getPosition(x,y,z);
+		sensorFusion.getSpeed(x, y, z);
 		pOutputFile << timeStamp << ',' << x <<','<<y<<','<<z<< std::endl;
 	}
+	*/
+	
+	while (curr_vision_time < 17155863){
+		sensorFusion.updateOneCycle(true, false, true);
+		timeStamp = sensorFusion.getCurrTimeStamp() - init_timeStamp;
+		if (timeStamp == last_timeStamp) continue;
+		last_timeStamp = timeStamp;
+		if (timeStamp > (curr_vision_time - vision_basetime)*1000){
+			android::vec3_t vision_position;
+			vision_position.x = 0;
+			vision_position.y = curr_vision_number - init_vision_number;
+			vision_position.z = 0;
+
+			sensorFusion.updatePosition(vision_position*0.001, curr_vision_time);
+
+			init_vision_number = curr_vision_number;
+			visionfile >> curr_vision_time >>tempch>> curr_vision_number;
+
+		}
+		float x, y, z;
+		//sensorFusion.getSpeed(x, y, z);
+		sensorFusion.getPosition(x, y, z);
+		pOutputFile << timeStamp << ',' << x << ',' << y << ',' << z << std::endl;
+
+	}
 	pOutputFile.close();
+	visionfile.close();
 	return 0;
 }
