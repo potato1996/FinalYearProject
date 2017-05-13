@@ -24,9 +24,11 @@ namespace android{
 		class SensorData* sensorData;
 		vec3_t Speed;
 		mat33_t SpeedP;
+		
 
 
 		vec3_t Position;
+		vec3_t PureSensorPosition;
 		vec4_t Attitude;
 		vec3_t GryoDrift;
 		vec3_t AccDrift;
@@ -44,9 +46,9 @@ namespace android{
 		void updateAttitude(bool useGYRO, bool useMAG, bool useACC);
 		void updatePosition(vec3_t visiondata, long long curr_vision_timestamp);
 		void getPosition(float& x,float& y, float& z){
-			x = Position.x;
-			y = Position.y;
-			z = Position.z;
+			x = PureSensorPosition.x;
+			y = PureSensorPosition.y;
+			z = PureSensorPosition.z;
 		}
 		void getSpeed(float& x, float& y, float& z){
 			x = Speed.x;
