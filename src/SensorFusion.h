@@ -18,7 +18,6 @@ namespace android{
 
 	class SensorFusion{
 		Fusion mFusion;
-		//vec4_t &mAttitude;
 		long long mGryoTime;
 		long long mAccTime;
 		class SensorData* sensorData;
@@ -32,7 +31,7 @@ namespace android{
 		vec4_t Attitude;
 		vec3_t GryoDrift;
 		vec3_t AccDrift;
-		int currTransactionNum;
+		//int currTransactionNum;
 
 
 	public:
@@ -42,9 +41,15 @@ namespace android{
 			mFusion.init(0);
 		}
 		void initStatus(SensorData* sensorData);
-		bool SensorFusion::updateOneCycle(bool useGYRO = true, bool useMAG = false, bool useACC = false);
-		void updateAttitude(bool useGYRO, bool useMAG, bool useACC);
+
+		bool SensorFusion::updateOneCycle(bool useGYRO = true, bool useMAG = false, bool useACC = true,
+			const Measurement & gyrodata, const Measurement & magdata, const Measurement & accdata);
+
+		void updateAttitude(bool useGYRO, bool useMAG, bool useACC,
+			const Measurement & gyrodata, const Measurement & magdata, const Measurement & accdata);
+
 		void updatePosition(vec3_t visiondata, long long curr_vision_timestamp);
+
 		void getPosition(float& x,float& y, float& z){
 			x = PureSensorPosition.x;
 			y = PureSensorPosition.y;
@@ -60,7 +65,7 @@ namespace android{
 		mat33_t dumpToRotationMatrix();
 		long long getCurrTimeStamp();
 	private:
-		void accumulateSpeed();
+		void accumulateSpeed(const Measurement& accdata);
 		void fuseVision(vec3_t z,float dT);
 
 	};

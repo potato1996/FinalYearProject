@@ -147,53 +147,56 @@ namespace android{
 			Position = PureSensorPosition;
 		}
 	}
-	void SensorFusion::accumulateSpeed(){
-		long long timestamp = sensorData->getTimeStamp(currTransactionNum);
+	void SensorFusion::accumulateSpeed(const Measurement& accdata){
+		long long timestamp = accdata.timestamp;
 		if ((timestamp - mAccTime > 0) &&
 			(timestamp - mAccTime < (int64_t)(1e8))){
 			double dT = (timestamp - mAccTime) / 1000000000.0f;
 			mat33_t rotationMatrix = dumpToRotationMatrix();
-			vec3_t testAcc = sensorData->getAccData(currTransactionNum);
-			vec3_t accData = invert(rotationMatrix) * (sensorData->getAccData(currTransactionNum)- AccDrift);
+			vec3_t testAcc = accdata.measure_val;
+			vec3_t accData = invert(rotationMatrix) * (accdata.measure_val - AccDrift);
 			accData.z -= 9.8f;
 			Speed = Speed + accData * dT;
 			PureSensorPosition = PureSensorPosition + Speed* dT;
 			//Speed = accData;
 		}
 	}
-	void SensorFusion::updateAttitude(bool useGYRO, bool useMAG, bool useACC){
-		Measurement currMeasurement;
+	void SensorFusion::updateAttitude(bool useGYRO, bool useMAG, bool useACC, 
+		const Measurement & gyrodata, const Measurement & magdata, const Measurement & accdata){
+		//Measurement currMeasurement;
 		if (useGYRO){
 			//update GRYO
-			currMeasurement.measure_type = GYRO;
-			currMeasurement.measure_val = sensorData->getGyroData(currTransactionNum);
-			currMeasurement.timestamp = sensorData->getTimeStamp(currTransactionNum);
-			update(currMeasurement);
+			
+			//currMeasurement.measure_type = GYRO;
+			//currMeasurement.measure_val = sensorData->getGyroData(currTransactionNum);
+			//currMeasurement.timestamp = sensorData->getTimeStamp(currTransactionNum);
+			update(gyrodata);
 		}
 		if (useMAG){
 			//update MAG
-			currMeasurement.measure_type = MAG;
-			currMeasurement.measure_val = sensorData->getMagData(currTransactionNum);
-			currMeasurement.timestamp = sensorData->getTimeStamp(currTransactionNum);
-			update(currMeasurement);
+			//currMeasurement.measure_type = MAG;
+			//currMeasurement.measure_val = sensorData->getMagData(currTransactionNum);
+			//currMeasurement.timestamp = sensorData->getTimeStamp(currTransactionNum);
+			update(magdata);
 		}
 		if (useACC){
 			//update ACC
-			currMeasurement.measure_type = ACC;
-			currMeasurement.measure_val = sensorData->getAccData(currTransactionNum);
-			currMeasurement.timestamp = sensorData->getTimeStamp(currTransactionNum);
-			update(currMeasurement);
+			//currMeasurement.measure_type = ACC;
+			//currMeasurement.measure_val = sensorData->getAccData(currTransactionNum);
+			//currMeasurement.timestamp = sensorData->getTimeStamp(currTransactionNum);
+			update(accdata);
 		}
 		Attitude = mFusion.getAttitude();
 	}
-	bool SensorFusion::updateOneCycle(bool useGYRO, bool useMAG, bool useACC){
-		if (currTransactionNum >= sensorData->totalTransactions - 1)
-			return false;
-		updateAttitude(useGYRO, useMAG, useACC);
+	bool SensorFusion::updateOneCycle(bool useGYRO, bool useMAG, bool useACC, 
+		const Measurement & gyrodata, const Measurement & magdata, const Measurement & accdata){
+		//if (currTransactionNum >= sensorData->totalTransactions - 1)
+		//	return false;
+		updateAttitude(useGYRO, useMAG, useACC,gyrodata, magdata, accdata);
 		accumulateSpeed();
-		mAccTime = sensorData->getTimeStamp(currTransactionNum);
-		mGryoTime = sensorData->getTimeStamp(currTransactionNum);
-		currTransactionNum++;
+		mAccTime = accdata.timestamp;
+		mGryoTime = gyrodata.timestamp;
+
 		return true;
 	}
 	void SensorFusion::dumpToEulerAngle(float& Pitch, float& Roll, float& Yaw){
