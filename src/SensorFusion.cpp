@@ -144,7 +144,8 @@ namespace android{
 			PureSensorPosition = Position;
 		}
 		else{
-			Position = PureSensorPosition;
+			//Position = PureSensorPosition;
+			Position = Position + z * dT;
 		}
 	}
 	void SensorFusion::accumulateSpeed(){
@@ -227,7 +228,7 @@ namespace android{
 
 int main(){
 
-	std::ifstream visionfile("D:/cs/FinalYearProject/data/yx1-5-3.csv");
+	std::ifstream visionfile("D:/cs/FinalYearProject/data/yx2s.csv");
 
 	long long vision_basetime = 1300000;
 	long long curr_vision_time = 0;
@@ -242,7 +243,7 @@ int main(){
 
 	android::SensorData dataloader;
 	dataloader.LoadLogFile("D:/cs/FinalYearProject/data/curve1.log");
-	std::ofstream pOutputFile("D:/cs/FinalYearProject/data/curve1_out.log");
+	std::ofstream pOutputFile("D:/cs/FinalYearProject/data/loss_2s.log");
 	android::SensorFusion sensorFusion;
 	sensorFusion.initStatus(&dataloader);
 	long long init_timeStamp = sensorFusion.getCurrTimeStamp();
