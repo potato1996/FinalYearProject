@@ -126,17 +126,24 @@ namespace android{
 			I[2][0] = 0;
 			I[2][1] = 0;
 			I[2][2] = 1;
+			
 
 			mat33_t A = I;
 			mat33_t B = I*dT;
 			mat33_t H = I;
-			mat33_t Ht = invert(H);
+			mat33_t Ht = transpose(H);
 			mat33_t Q = I*DEFAULT_ACC_STDEV;
 			mat33_t R = I*DUFAULT_VISION_STDEV;
 
-			mat33_t P1 = SpeedP + Q;
+			//predict...
+			//pure IMU speed has already been calculated
+			mat33_t P1 = A*SpeedP*transpose(A) + Q;
+
+			//kalman gain
 			mat33_t k = P1* Ht * invert(R + H*P1*Ht);
-			vec3_t x1 = A*Speed + k * (z - H*Speed);
+
+			//update 
+			vec3_t x1 = Speed + k * (z - H*Speed);
 			SpeedP = (I - k*H)*P1;
 			Speed = x1;
 
